@@ -11,7 +11,7 @@ app.use(express.json())
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ttptxjd.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -25,11 +25,57 @@ const client = new MongoClient(uri, {
 
 const tech_bond = client.db('tech_bond')
 const allProducts = tech_bond.collection('allProducts')
+const userCart = tech_bond.collection('userCart')
 
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+
+
+    app.get('/usercart',async(req,res)=>{
+      const cursor = userCart.find()
+      const result = await cursor.toArray()
+      res.send(result)
+  })
+
+
+  app.post('/usercart',async (req,res)=>{
+      const productInfo = req.body
+      const result  = await userCart.insertOne(productInfo)
+      res.send(result)
+      console.log(result)
+  })
+
+  // app.delete('/usercart/:id',async(req,res)=>{
+  //   const id = req.params.id
+  //   const query = {_id: new ObjectId(id)}
+  //   const result = await userCart.deleteOne(query)
+  //   res.send(result)
+  //   console.log(result)
+  // })
+
+  // Updated API route with error handling
+app.delete('/usercart/:id', async (req, res) => {
+  try {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCart.deleteOne(query);
+      
+      if (result.deletedCount > 0) {
+          console.log("Successfully deleted");
+          res.status(200).json({ message: "Item successfully deleted" });
+      } else {
+          console.log("Item not found");
+          res.status(404).json({ message: "Item not found" });
+      }
+  } catch (error) {
+      console.error("Error deleting item:", error);
+      res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 
 
@@ -47,8 +93,28 @@ async function run() {
         console.log(result)
     })
 
+    app.put('/allproducts/:id',async (req,res)=>{
+      const id = req.params.id
+      const filter = {_id: new ObjectId(id)}
+      const options = {upset: true}
+      const updatedProductInfo = req.body
+      const productInfo = {
+        $set: {
+          image:updatedProductInfo.image,
+          name:updatedProductInfo.name,
+          brandName:updatedProductInfo.brandName,
+          type:updatedProductInfo.type,
+          price:updatedProductInfo.price,
+          description:updatedProductInfo.description,
+          rating:updatedProductInfo.rating
+
+        }
+      }
+      const result = await allProducts.updateOne(filter,productInfo,options)
+      res.send(result)
 
 
+    })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");

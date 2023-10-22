@@ -26,12 +26,25 @@ const client = new MongoClient(uri, {
 const tech_bond = client.db('tech_bond')
 const allProducts = tech_bond.collection('allProducts')
 const userCart = tech_bond.collection('userCart')
+const userInfo = tech_bond.collection('userInfo')
 
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+
+    app.get('/userInfo',async(req,res)=>{
+      const cursor = userInfo.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    app.post('/userInfo',async(req,res)=>{
+      const info = req.body
+      const result = await userInfo.insertOne(info)
+      res.send(result)
+    })
 
 
     app.get('/usercart',async(req,res)=>{
@@ -47,6 +60,8 @@ async function run() {
       res.send(result)
       console.log(result)
   })
+
+
 
   // app.delete('/usercart/:id',async(req,res)=>{
   //   const id = req.params.id
